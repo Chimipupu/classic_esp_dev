@@ -1,4 +1,5 @@
 #include "app_main.h"
+#include "../app/neopixel/app_neopixel.hpp"
 
 // Taskハンドル
 TaskHandle_t AppMainTaskHandle;
@@ -51,6 +52,10 @@ static void Timer_Create(void);
 
 static void app_drv_init(void)
 {
+    // GPIO
+    app_neopixel_init();
+    app_neopixel_ctrl(16, 0, 0, 0, true, false);    // 赤色
+
     // UART
     Serial.begin(115200);
 
@@ -101,17 +106,6 @@ static void app_task_init(void)
                         __APP_CPU__                  // 実行するコア
                         );
 #endif
-#if 1
-    // アプリ WiFi Main Task
-    xTaskCreateUniversal(App_WiFi_Main_Task,        // タスク関数
-                        "App_WiFi_Main_Task",       // タスク名
-                        8192,                       // スタック
-                        NULL,                       // 起動パラメータ
-                        RTOS_PRIORITY_HIGH,         // 優先度
-                        &AppWiFiTaskHandle,         // タスクハンドラ
-                        __APP_CPU__                 // 実行するコア
-                        );
-#endif
 
 #ifdef BLE_ENABLE
     // アプリ BLE Main Task
@@ -123,7 +117,18 @@ static void app_task_init(void)
                         &AppBLETaskHandle,           // タスクハンドラ
                         __APP_CPU__                  // 実行するコア
                         );
+#else
+    // アプリ WiFi Main Task
+    xTaskCreateUniversal(vTaskCore1WiFi,        // タスク関数
+                        "vTaskCore1WiFi",       // タスク名
+                        8192,                       // スタック
+                        NULL,                       // 起動パラメータ
+                        RTOS_PRIORITY_HIGH,         // 優先度
+                        &AppWiFiTaskHandle,         // タスクハンドラ
+                        __APP_CPU__                 // 実行するコア
+                        );
 #endif
+
 #if 0
     // アプリ センサ Main Task
     xTaskCreateUniversal(App_Sensor_Main_Task,       // タスク関数
@@ -150,12 +155,14 @@ static void app_task_init(void)
                         EVENT_PM_0_INIT );
 
 #ifdef BLE_ENABLE
+    app_neopixel_ctrl(0, 0, 16, 0, true, false);    // 青色
     xEventGroupSetBits( BLE_Event_Handler,
                         EVENT_BLE_0_INIT );
-#endif
-
+#else
+    app_neopixel_ctrl(16, 16, 16, 0, true, false);   // 白
     xEventGroupSetBits( WiFi_Event_Handler,
                         EVENT_WIFI_0_INIT );
+#endif
 
     xEventGroupSetBits( Sensor_Event_Handler,
                         EVENT_SENSOR_0_INIT );
@@ -343,7 +350,7 @@ void App_Main_Task(void *pvParameters)
 
     DEBUG_PRINTF_RTOS("[Task Start] : APP Main Task (Run Core%d)\n",xPortGetCoreID());
 
-    for(;;)
+    while(1)
     {
         // メッセージ受信
         ret = xQueueReceive( QueueHandle, &que_buf, portMAX_DELAY );
@@ -361,14 +368,16 @@ void App_Main_Task(void *pvParameters)
                         case Q_DATA_KIND_INIT :
                             DEBUG_PRINTF_RTOS("[Task Msg@APP Main] : WiFi Init MSG For WiFi Task\n");
 #if 0
-                            // (DEBUG) PMタスクにDeepSleepイベント発行
                             xEventGroupSetBits( PM_Event_Handler,
                                                 EVENT_PM_6_DEEPSLEEP );
-#else
-                            // WiFi NTP取得イベント発行
+#endif
+
+                            // xEventGroupSetBits( BLE_Event_Handler,
+                            //                     EVENT_BLE_7_BLE_UART );
+
                             xEventGroupSetBits( WiFi_Event_Handler,
                                                 EVENT_WIFI_13_OTA );
-#endif
+
                             break;
 
                         case Q_DATA_KIND_OTA :

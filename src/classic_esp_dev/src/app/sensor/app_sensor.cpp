@@ -15,7 +15,7 @@ void App_Sensor_Main_Task(void *pvParameters)
 
     DEBUG_PRINTF_RTOS("[Task Start] : APP Sensor Task (Run Core%d)\n",xPortGetCoreID());
 
-    for(;;)
+    while(1)
     {
         // イベント待ち
         evt_bit = xEventGroupWaitBits( Sensor_Event_Handler, // イベントグループハンドラ

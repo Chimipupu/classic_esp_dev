@@ -18,16 +18,16 @@
 
 // App
 #include "../app/wifi/app_wifi.h"
-// #include "../app/ble/app_ble.h"
+#include "../app/ble/app_ble.h"
 #include "../app/pm/app_pm.h"
 #include "../app/sensor/app_sensor.h"
 #include "../app/pwm/app_pwm.h"
 
 // #define WDT_ENABLE
 // #define PSRAM_ENABLE
-#define WIFI_ENABLE
+// #define WIFI_ENABLE
 // #define OTA_ENABLE
-// #define BLE_ENABLE
+#define BLE_ENABLE
 
 typedef enum __GPIO_E{
     GPIO_0 = 0,

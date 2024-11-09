@@ -11,12 +11,13 @@ extern QueueHandle_t  QueueHandle;
 // イベントハンドル
 extern EventGroupHandle_t WiFi_Event_Handler;
 
+TaskHandle_t vTaskHandleOTA;
+
+static void vTaskCore1OTA(void *p_parameter);
 static void wifi_init( void );
 
 const char* p_ssid     = "B4865595449D-2G";
 const char* p_password = "55351108940066";
-
-static bool s_ota = false;
 
 static void wifi_init( void )
 {
@@ -34,7 +35,19 @@ static void wifi_init( void )
     DEBUG_PRINTF_RTOS("IP:%s\n", WiFi.localIP().toString().c_str());
 }
 
-void App_WiFi_Main_Task(void *pvParameters)
+static void vTaskCore1OTA(void *p_parameter)
+{
+    DEBUG_PRINTF_RTOS("[Core1] vTaskCore1OTA\n");
+    APP_OTA_Init();
+
+    while (1)
+    {
+        APP_OTA_Req_Catch();
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+    }
+}
+
+void vTaskCore1WiFi(void *pvParameters)
 {
     uint8_t ret;
     EventBits_t  evt_bit;
@@ -44,7 +57,7 @@ void App_WiFi_Main_Task(void *pvParameters)
 
     DEBUG_PRINTF_RTOS("[Task Start] : APP WiFi Task (Run Core%d)\n",xPortGetCoreID());
 
-    for(;;)
+    while(1)
     {
         // イベント待ち
         evt_bit = xEventGroupWaitBits( WiFi_Event_Handler,      // イベントグループハンドラ
@@ -104,20 +117,21 @@ void App_WiFi_Main_Task(void *pvParameters)
                 // OTAイベント
                 if((evt_bit & EVENT_WIFI_13_OTA) != 0){
                     DEBUG_PRINTF_RTOS("[Task Msg@APP WiFi] : OTA Proc Event\n");
-                    APP_OTA_Init();
-                    s_ota = true;
-                    DEBUG_PRINTF_RTOS("[Task Msg@APP WiFi] : OTA Server Start\n");
+                    DEBUG_PRINTF_RTOS("[Task Msg@APP WiFi] : OTA Task Create\n");
+                    xTaskCreateUniversal(vTaskCore1OTA,          // タスク関数
+                                        "vTaskCore1OTA",         // タスク名
+                                        16384,                   // スタック
+                                        NULL,                    // 起動パラメータ
+                                        RTOS_PRIORITY_MAXIMUM,   // 優先度
+                                        &vTaskHandleOTA,         // タスクハンドラ
+                                        __APP_CPU__              // 実行するコア
+                                        );
                 }
 #ifdef BLE_ENABLE
                 // RFセマフォ解放
                 xSemaphoreGive( RF_Semphr_Handler );
 #endif
             }
-        }
-
-        if(s_ota != false){
-            APP_OTA_Req_Catch();
-            vTaskDelay(1 / portTICK_PERIOD_MS);
         }
     }
 }

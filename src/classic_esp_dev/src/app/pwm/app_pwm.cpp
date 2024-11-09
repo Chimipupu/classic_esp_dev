@@ -166,7 +166,7 @@ void App_PWM_Main_Task(void *pvParameters)
 
     DEBUG_PRINTF_RTOS("[Task Start] : APP PWM Task (Run Core%d)\n",xPortGetCoreID());
 
-    for(;;)
+    while(1)
     {
         // イベント待ち
         evt_bit = xEventGroupWaitBits( PWM_Event_Handler, // イベントグループハンドラ

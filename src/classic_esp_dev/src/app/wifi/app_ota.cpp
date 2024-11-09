@@ -7,7 +7,7 @@ const char* loginIndex =
         "<table width='50%' bgcolor='37C924' align='center'>"
             "<tr>"
                 "<td colspan=2>"
-                    "<center><font size=4><b>ESP32 OTA Update(F/W REV.0.11)</b></font></center>"
+                    "<center><font size=4><b>ESP32 OTA Update</b></font></center>"
                     "<br>"
                 "</td>"
                 "<br>"
@@ -123,7 +123,7 @@ void APP_OTA_Init(void)
     }, []() {
         HTTPUpload& upload = ota_server.upload();
         if (upload.status == UPLOAD_FILE_START) {
-            // SerialBT.printf("OTA Update F/W: %s\n", upload.filename.c_str());s
+            // SerialBT.printf("OTA Update F/W: %s\n", upload.filename.c_str());
             DEBUG_PRINTF_RTOS("OTA Update F/W: %s\n", upload.filename.c_str());
             if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { //start with max available size
                 Update.printError(Serial);

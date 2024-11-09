@@ -8,20 +8,23 @@ extern EventGroupHandle_t BLE_Event_Handler;       /* BLE */
 // メッセージキューハンドル
 extern QueueHandle_t  QueueHandle;
 
+TaskHandle_t vTaskHandleBtSerial;
+
 BluetoothSerial SerialBT;
 // Bluetooth device name
 const char* s_ble_name = "ESP32_BLE_Serial";
 
-static void App_BLE_Serial_Start(void);
-static void App_BLE_Serial_Main(void);
+static void vTaskCore1BtSerial(void *p_parameter);
+static void bt_serial_start(void);
+static void bt_serial_main(void);
 
-static void App_BLE_Serial_Start(void)
+static void bt_serial_start(void)
 {
     SerialBT.begin(s_ble_name);
     DEBUG_PRINTF_RTOS("BLE Serial Deveice(%s) is Running\n",s_ble_name);
 }
 
-static void App_BLE_Serial_Main(void)
+static void bt_serial_main(void)
 {
     char val;
 
@@ -38,6 +41,18 @@ static void App_BLE_Serial_Main(void)
     delay(1);
 }
 
+static void vTaskCore1BtSerial(void *p_parameter)
+{
+    DEBUG_PRINTF_RTOS("[Core1] vTaskCore1BtSerial\n");
+    bt_serial_start();
+
+    while (1)
+    {
+        bt_serial_main();
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+}
+
 void App_BLE_Main_Task(void *pvParameters)
 {
     uint8_t ret;
@@ -47,7 +62,7 @@ void App_BLE_Main_Task(void *pvParameters)
 
     DEBUG_PRINTF_RTOS("[Task Start] : APP BLE Task(Run Core%d)\n",xPortGetCoreID());
 
-    for(;;)
+    while(1)
     {
         // イベント待ち
         evt_bit = xEventGroupWaitBits( BLE_Event_Handler,      // イベントグループハンドラ
@@ -70,6 +85,15 @@ void App_BLE_Main_Task(void *pvParameters)
                 {
                     // (DEBUG)
                     DEBUG_PRINTF_RTOS("[Task Msg@APP BLE] : Init Event\n");
+                    DEBUG_PRINTF_RTOS("[Task Msg@APP BLE] : BT Serial Task Create\n");
+                    xTaskCreateUniversal(vTaskCore1BtSerial,     // タスク関数
+                                        "vTaskCore1BtSerial",    // タスク名
+                                        8192,                    // スタック
+                                        NULL,                    // 起動パラメータ
+                                        RTOS_PRIORITY_MIDDLE,    // 優先度
+                                        &vTaskHandleBtSerial,    // タスクハンドラ
+                                        __APP_CPU__              // 実行するコア
+                                        );
 
                     // メッセージ作成
                     q_data.QDataKind = Q_DATA_KIND_INIT;
@@ -86,8 +110,6 @@ void App_BLE_Main_Task(void *pvParameters)
                 {
                     // (DEBUG)
                     DEBUG_PRINTF_RTOS("[Task Msg@APP BLE] : BLE UART Event\n");
-
-                    App_BLE_Serial_Start();
 
                     // メッセージ作成
                     q_data.QDataKind = Q_DATA_KIND_INIT;

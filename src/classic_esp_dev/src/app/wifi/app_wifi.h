@@ -36,6 +36,6 @@
         EVENT_WIFI_11_WIFI_AP | EVENT_WIFI_12_HTTPD | \
         EVENT_WIFI_13_OTA )
 
-void App_WiFi_Main_Task(void *pvParameters);
+void vTaskCore1WiFi(void *pvParameters);
 
 #endif /* _APP_WIFI_H_ */
